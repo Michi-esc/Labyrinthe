@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Labyrinthe Test</title>
+</head>
+<body>
+
+    <div id="controls">
+        <input type="number" id="size" value="21" min="5" max="101" step="2">
+        <button onclick="generer()">Générer (Backtracking)</button>
+        <button onclick="resoudre()">Résoudre (A*)</button>
+    </div>
+    
+    <canvas id="mazeCanvas" width="500" height="500" style="border:1px solid black"></canvas>
+
+    <script src="../labyrinth.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>

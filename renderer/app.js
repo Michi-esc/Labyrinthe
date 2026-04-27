@@ -267,28 +267,87 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Écouteurs Mode Jeu et Actions Algorithmiques ---
     let isGameMode = false;
-    let stepsCount = 0;
+    window.stepsCount = 0; // Rendre global pour accès depuis labyrinth.js
 
     function toggleGameMode(forceQuit = false) {
         isGameMode = forceQuit ? false : !isGameMode; // Correction de la bascule (toggle)
         
         if (isGameMode) {
-            stepsCount = 0;
-            overlaySteps.textContent = `Nombre de pas : ${stepsCount}`;
+            window.stepsCount = 0;
+            overlaySteps.textContent = `Nombre de pas : ${window.stepsCount}`;
             gameOverlay.style.display = 'flex';
             btnPlayMode.textContent = 'Quitter le Mode Jeu';
             btnPlayMode.classList.remove('btn-success');
             btnPlayMode.classList.add('btn-danger');
+            
+            // Initialiser la position du joueur et redessiner
+            if (typeof playerPos !== 'undefined') {
+                playerPos.x = 1;
+                playerPos.y = 1;
+            }
+            if (typeof dessiner === 'function') {
+                dessiner();
+                if (typeof drawPlayer === 'function') {
+                    drawPlayer();
+                }
+            }
         } else {
             gameOverlay.style.display = 'none';
             btnPlayMode.textContent = "Démarrer l'aventure (Mode Jeu)";
             btnPlayMode.classList.remove('btn-danger');
             btnPlayMode.classList.add('btn-success');
+            
+            // Réinitialiser la position du joueur au démarrage
+            if (typeof playerPos !== 'undefined') {
+                playerPos.x = 1;
+                playerPos.y = 1;
+            }
+            // Fermer le modal de victoire s'il est ouvert
+            const victoryModal = document.getElementById('victory-modal');
+            if (victoryModal) {
+                victoryModal.style.display = 'none';
+            }
+            if (typeof dessiner === 'function') {
+                dessiner();
+            }
         }
     }
 
     btnPlayMode.addEventListener('click', () => toggleGameMode(false));
     btnQuitGame.addEventListener('click', () => toggleGameMode(true));
+
+    // Écouteur pour le bouton de continuation après victoire
+    const btnVictoryContinue = document.getElementById('btn-victory-continue');
+    if (btnVictoryContinue) {
+        btnVictoryContinue.addEventListener('click', () => {
+            const victoryModal = document.getElementById('victory-modal');
+            if (victoryModal) {
+                victoryModal.style.display = 'none';
+                // Redessiner le labyrinthe pour continuer à jouer
+                if (typeof dessiner === 'function') {
+                    dessiner();
+                    if (typeof drawPlayer === 'function') {
+                        drawPlayer();
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Écouteurs pour la Génération et Résolution du Labyrinthe ---
+    btnGenerate.addEventListener('click', () => {
+        const container = canvas.parentElement;
+        canvas.width = Math.max(0, container.clientWidth - 40);
+        canvas.height = Math.max(0, container.clientHeight - 40);
+        generer();
+    });
+
+    btnSolve.addEventListener('click', () => {
+        const container = canvas.parentElement;
+        canvas.width = Math.max(0, container.clientWidth - 40);
+        canvas.height = Math.max(0, container.clientHeight - 40);
+        resoudre();
+    });
 
     document.addEventListener('keydown', (e) => {
         if(!isGameMode || !viewEditor.classList.contains('active')) return;
@@ -298,10 +357,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(validKeys.includes(key)) {
             e.preventDefault(); // Empêche le défilement de la page avec les flèches
-            console.log('Action de jeu détectée :', key);
-            stepsCount++;
-            overlaySteps.textContent = `Nombre de pas : ${stepsCount}`;
-            // TODO: Intégrer l'appel à la fonction de mouvement de la Personne C
+            window.stepsCount++;
+            overlaySteps.textContent = `Nombre de pas : ${window.stepsCount}`;
+            
+            // Appel de la fonction de mouvement du joueur
+            if (typeof movePlayer === 'function') {
+                movePlayer(key);
+            }
         }
     });
 

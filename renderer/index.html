@@ -98,6 +98,19 @@
                 <span id="overlay-steps">Nombre de pas : 0</span>
                 <button id="btn-quit-game" class="btn-danger btn-sm">Quitter le jeu</button>
             </div>
+
+            <!-- Modal de Victoire -->
+            <div id="victory-modal" class="victory-modal" style="display: none;">
+                <div class="victory-box">
+                    <h1>🎉 VICTOIRE ! 🎉</h1>
+                    <p id="victory-message">Vous avez trouvé la sortie !</p>
+                    <div class="victory-stats">
+                        <p>Pas effectués : <strong id="victory-steps">0</strong></p>
+                    </div>
+                    <button id="btn-victory-continue" class="btn-success btn-large">Continuer</button>
+                </div>
+                <canvas id="confetti-canvas"></canvas>
+            </div>
             </section>
         </main>
     </div>
@@ -139,6 +152,7 @@
         </main>
     </div>
 
+    <script src="../labyrinth.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

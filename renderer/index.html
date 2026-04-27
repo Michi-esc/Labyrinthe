@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Labyrinthes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- VUE : Connexion -->
+    <div id="view-login" class="view active">
+        <div class="login-card">
+            <h1>MazeManager Pro</h1>
+            <p>Veuillez vous identifier</p>
+            <div class="form-group">
+                <input type="text" id="username" placeholder="Nom d'utilisateur">
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Mot de passe">
+            </div>
+            <button id="btn-login" class="btn-primary">Se connecter</button>
+        </div>
+    </div>
+
+    <!-- VUE : Dashboard -->
+    <div id="view-dashboard" class="view">
+        <header class="app-header">
+            <h2>Tableau de bord</h2>
+            <div class="header-actions">
+                <button id="btn-admin" class="btn-primary" style="display: none;">Panel Admin</button>
+                <button id="btn-new-maze" class="btn-success">+ Nouveau Labyrinthe</button>
+                <button id="btn-logout" class="btn-danger">Déconnexion</button>
+            </div>
+        </header>
+        <main class="dashboard-content">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Taille</th>
+                        <th>Difficulté</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="maze-table-body">
+                    <!-- Injecté par JavaScript -->
+                </tbody>
+            </table>
+        </main>
+    </div>
+
+    <!-- VUE : Éditeur de Labyrinthe -->
+    <div id="view-editor" class="view">
+        <header class="app-header">
+            <h2 id="editor-title">Créer / Éditer un Labyrinthe</h2>
+            <button id="btn-back" class="btn-secondary">Retour au tableau de bord</button>
+        </header>
+        <main class="editor-layout">
+            <!-- Panneau Latéral (Édition & Contrôle) -->
+            <aside class="editor-sidebar">
+                <form id="maze-form" class="editor-form">
+                    <input type="hidden" id="maze-id">
+                    <div class="form-group">
+                        <label for="maze-name">Nom du labyrinthe</label>
+                        <input type="text" id="maze-name" required placeholder="Ex: Le Dédale Oublié">
+                    </div>
+                    <div class="form-group">
+                        <label for="maze-size">Taille</label>
+                        <select id="maze-size" required>
+                            <option value="Petite">Petite</option>
+                            <option value="Moyenne" selected>Moyenne</option>
+                            <option value="Grande">Grande</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maze-difficulty">Difficulté : <span id="difficulty-val">5</span>/10</label>
+                        <input type="range" id="maze-difficulty" min="1" max="10" value="5">
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Enregistrer</button>
+                </form>
+                
+                <hr class="sidebar-divider">
+                
+                <div class="algorithm-controls">
+                    <h3>Actions Algorithmes</h3>
+                    <button id="btn-generate" class="btn-secondary btn-block">Générer</button>
+                    <button id="btn-solve" class="btn-secondary btn-block">Résoudre Automatiquement</button>
+                <button id="btn-play-mode" class="btn-success btn-block">Démarrer l'aventure (Mode Jeu)</button>
+                </div>
+            </aside>
+
+            <!-- Zone de Rendu (responsive) -->
+        <section class="editor-canvas-container" style="position: relative;">
+                <canvas id="maze-canvas"></canvas>
+            
+            <!-- Interface superposée (Overlay) du Mode Jeu -->
+            <div id="game-overlay" class="game-overlay" style="display: none;">
+                <span id="overlay-steps">Nombre de pas : 0</span>
+                <button id="btn-quit-game" class="btn-danger btn-sm">Quitter le jeu</button>
+            </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- VUE : Administration -->
+    <div id="view-admin" class="view">
+        <header class="app-header">
+            <h2>Panneau d'Administration</h2>
+        <button id="btn-back-from-admin" class="btn-secondary">Retour au Dashboard</button>
+        </header>
+        <main class="admin-content">
+            <section class="admin-stats">
+                <div class="stat-card">
+                    <h3>Total Labyrinthes</h3>
+                    <p id="stat-total-mazes">0</p>
+                </div>
+                <div class="stat-card">
+                <h3>Total Utilisateurs</h3>
+                    <p id="stat-active-users">0</p>
+                </div>
+            </section>
+            
+            <section class="admin-users">
+                <h3>Gestion des Utilisateurs</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Rôle</th>
+                            <th>Nb Labyrinthes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- Injecté par JavaScript -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

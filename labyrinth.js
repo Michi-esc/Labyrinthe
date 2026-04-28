@@ -32,8 +32,6 @@ function generer() {
         // Initialisation : Grille remplie de murs
         grid = Array.from({ length: size }, () => Array(size).fill(1));
         playerPos = { x: 1, y: 1 };
-        const targetX = size - 2;
-        const targetY = size - 2;
 
         // 2. Choix de l'algorithme
         if (level <= 3) {
@@ -49,7 +47,8 @@ function generer() {
 
         // Marquer entrée et sortie
         grid[1][1] = 2; // Entrée
-        grid[targetY][targetX] = 3; // Sortie
+        const exitPos = trouverSortieLaPlusLoin(1, 1);
+        grid[exitPos.y][exitPos.x] = 3; // Sortie
 
         dessiner();
         console.log(`✅ Labyrinthe généré (Niveau: ${level}, Taille: ${size})`);
@@ -93,29 +92,53 @@ function generatePrim(startX, startY) {
 
 /**
  * Recursive Backtracker (DFS) : Longs chemins tortueux.
- * Idéal pour les niveaux MOYENS et DIFFICILES.
+ * Amélioré avec biais directionnel et priorité aux bords.
  */
 function generateRecursiveBacktracker(startX, startY) {
-    const stack = [[startX, startY]];
+    const stack = [{ x: startX, y: startY, lastDx: 0, lastDy: 0 }];
     grid[startY][startX] = 0;
 
     while (stack.length > 0) {
-        const [x, y] = stack[stack.length - 1];
+        const current = stack[stack.length - 1];
+        const { x, y, lastDx, lastDy } = current;
         const neighbors = [];
 
         [[0, 2], [0, -2], [2, 0], [-2, 0]].forEach(([dx, dy]) => {
             const nx = x + dx, ny = y + dy;
             if (nx > 0 && nx < size && ny > 0 && ny < size && grid[ny][nx] === 1) {
-                neighbors.push({ nx, ny, dx, dy });
+                let weight = 10; // Poids de base
+
+                // Task 3: Priorité aux bords et coins (remplissage périphérique)
+                if (nx <= 2 || nx >= size - 3 || ny <= 2 || ny >= size - 3) {
+                    weight += 15;
+                }
+
+                // Task 2: Biais de direction (favorise les lignes droites à ~70%)
+                if (dx === lastDx && dy === lastDy) {
+                    weight += 30;
+                }
+
+                neighbors.push({ nx, ny, dx, dy, weight });
             }
         });
 
         if (neighbors.length > 0) {
-            // Choix TRUE RANDOM
-            const next = neighbors[Math.floor(Math.random() * neighbors.length)];
-            grid[next.ny][next.nx] = 0;
-            grid[y + next.dy / 2][x + next.dx / 2] = 0;
-            stack.push([next.nx, next.ny]);
+            // Sélection pondérée pour l'imprévisibilité contrôlée
+            const totalWeight = neighbors.reduce((sum, n) => sum + n.weight, 0);
+            let random = Math.random() * totalWeight;
+            let chosen = neighbors[0];
+
+            for (const n of neighbors) {
+                random -= n.weight;
+                if (random <= 0) {
+                    chosen = n;
+                    break;
+                }
+            }
+
+            grid[chosen.ny][chosen.nx] = 0;
+            grid[y + chosen.dy / 2][x + chosen.dx / 2] = 0;
+            stack.push({ x: chosen.nx, y: chosen.ny, lastDx: chosen.dx, lastDy: chosen.dy });
         } else {
             stack.pop(); // Backtrack
         }
@@ -123,25 +146,68 @@ function generateRecursiveBacktracker(startX, startY) {
 }
 
 /**
- * Pour les niveaux 8-10 : On "casse" des murs aléatoires pour créer 
- * des boucles et des fausses pistes complexes.
+ * Pour les niveaux 8-10 : Connecte des impasses pour créer des boucles complexes.
  */
 function createComplexFalseLeads(level) {
-    const attempts = (level - 7) * (size * 2); // Plus on est proche de 10, plus on casse
-    for (let i = 0; i < attempts; i++) {
-        let x = Math.floor(Math.random() * (size - 2)) + 1;
-        let y = Math.floor(Math.random() * (size - 2)) + 1;
-
-        // Si c'est un mur qui sépare deux chemins, on a une chance de le casser
-        if (grid[y][x] === 1) {
-            const horizontal = grid[y][x-1] === 0 && grid[y][x+1] === 0;
-            const vertical = grid[y-1][x] === 0 && grid[y+1][x] === 0;
-            
-            if (horizontal || vertical) {
-                grid[y][x] = 0;
+    const deadEnds = [];
+    for (let y = 1; y < size - 1; y++) {
+        for (let x = 1; x < size - 1; x++) {
+            if (grid[y][x] === 0) {
+                let paths = 0;
+                [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dx, dy]) => {
+                    if (grid[y + dy][x + dx] === 0) paths++;
+                });
+                if (paths === 1) deadEnds.push({ x, y });
             }
         }
     }
+
+    shuffleArray(deadEnds);
+    const loopsToCreate = (level - 7) * 10; // Création massive de boucles pour le mode expert
+    let created = 0;
+
+    for (const de of deadEnds) {
+        if (created >= loopsToCreate) break;
+        const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+        shuffleArray(dirs);
+
+        for (const [dx, dy] of dirs) {
+            const wx = de.x + dx, wy = de.y + dy;
+            const nx = de.x + dx * 2, ny = de.y + dy * 2;
+            if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && grid[wy][wx] === 1 && grid[ny][nx] === 0) {
+                grid[wy][wx] = 0;
+                created++;
+                break;
+            }
+        }
+    }
+}
+
+/**
+ * Calcule le point de sortie le plus éloigné de l'entrée (BFS).
+ */
+function trouverSortieLaPlusLoin(startX, startY) {
+    let distances = Array.from({ length: size }, () => Array(size).fill(-1));
+    let queue = [[startX, startY]];
+    distances[startY][startX] = 0;
+    let maxDist = 0;
+    let exitPos = { x: startX, y: startY };
+
+    while (queue.length > 0) {
+        let [x, y] = queue.shift();
+        [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dx, dy]) => {
+            let nx = x + dx, ny = y + dy;
+            if (nx >= 0 && nx < size && ny >= 0 && ny < size && (grid[ny][nx] === 0 || grid[ny][nx] === 2) && distances[ny][nx] === -1) {
+                distances[ny][nx] = distances[y][x] + 1;
+                queue.push([nx, ny]);
+                if (distances[ny][nx] > maxDist) {
+                    maxDist = distances[ny][nx];
+                    exitPos = { x: nx, y: ny };
+                }
+            }
+        });
+    }
+    return exitPos;
 }
 
 // Ajoute bien "async" devant la fonction
@@ -153,7 +219,19 @@ async function resoudre() {
     }
 
     let start = { x: 1, y: 1 };
-    let end = { x: size - 2, y: size - 2 };
+    let end = null;
+
+    // Rechercher dynamiquement la position de la sortie (marquée par 3)
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            if (grid[y][x] === 3) {
+                end = { x, y };
+                break;
+            }
+        }
+        if (end) break;
+    }
+
     const canvas = document.getElementById('maze-canvas');
     const ctx = canvas.getContext('2d');
     

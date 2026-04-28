@@ -3,41 +3,144 @@ let grid = [];
 let size = 21; // Doit être impair pour avoir des murs séparateurs
 let playerPos = { x: 1, y: 1 }; // Position du joueur
 
+/**
+ * Mélange aléatoirement un tableau.
+ * @param {Array} array L'array à mélanger.
+ * @returns {Array} L'array mélangé.
+ */
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+/**
+ * Configure les paramètres de génération basés sur la difficulté (1-10)
+ */
 function generer() {
     try {
-        // Récupération de la taille depuis le nouveau menu déroulant
-        const sizeSelect = document.getElementById('maze-size');
-        if (sizeSelect) {
-            const mapSizes = { 'Petite': 11, 'Moyenne': 25, 'Grande': 51 };
-            size = mapSizes[sizeSelect.value] || 21;
-        }
+        const diffInput = document.getElementById('maze-difficulty');
+        const level = diffInput ? parseInt(diffInput.value) : 5;
 
-        // Initialisation : Tout est un mur (1)
+        // 1. Taille dynamique : chaque niveau augmente la grille (toujours impair)
+        // Formule : Niveau 1 = 11, chaque niveau ajoute 4 cases (+8 pour les niveaux experts)
+        size = 7 + (level * 4);
+        if (level > 7) size += 4; // Accélération de la taille pour les niveaux 8, 9, 10
+
+        // Initialisation : Grille remplie de murs
         grid = Array.from({ length: size }, () => Array(size).fill(1));
+        playerPos = { x: 1, y: 1 };
+        const targetX = size - 2;
+        const targetY = size - 2;
 
-        function walk(x, y) {
-            grid[y][x] = 0; // On creuse la cellule actuelle
-
-            // Directions aléatoires : Haut, Bas, Gauche, Droite
-            const dirs = [[0, -2], [0, 2], [-2, 0], [2, 0]].sort(() => Math.random() - 0.5);
-
-            for (let [dx, dy] of dirs) {
-                let nx = x + dx, ny = y + dy;
-                if (nx > 0 && nx < size && ny > 0 && ny < size && grid[ny][nx] === 1) {
-                    grid[y + dy / 2][x + dx / 2] = 0; // On casse le mur entre les deux
-                    walk(nx, ny);
-                }
+        // 2. Choix de l'algorithme
+        if (level <= 3) {
+            generatePrim(1, 1);
+        } else {
+            generateRecursiveBacktracker(1, 1);
+            
+            // 3. Difficulté 8-10 : Suppression de murs supplémentaires (Cycles)
+            if (level >= 8) {
+                createComplexFalseLeads(level);
             }
         }
 
-        walk(1, 1); // Point de départ
+        // Marquer entrée et sortie
         grid[1][1] = 2; // Entrée
-        grid[size - 2][size - 2] = 3; // Sortie
+        grid[targetY][targetX] = 3; // Sortie
+
         dessiner();
-        console.log("✅ Génération terminée, taille :", size);
+        console.log(`✅ Labyrinthe généré (Niveau: ${level}, Taille: ${size})`);
     } catch (e) {
         console.error("Erreur de génération:", e);
-        alert("Le labyrinthe n'a pas pu être généré. Regardez la console (Ctrl+Maj+I).");
+        alert("Erreur lors de la génération. Détails en console.");
+    }
+}
+
+/**
+ * Algorithme de Prim : Crée beaucoup d'impasses courtes.
+ * Idéal pour les niveaux FACILES.
+ */
+function generatePrim(startX, startY) {
+    grid[startY][startX] = 0;
+    let walls = [];
+
+    // Ajouter les murs adjacents au point de départ
+    const addWalls = (x, y) => {
+        [[0, 2], [0, -2], [2, 0], [-2, 0]].forEach(([dx, dy]) => {
+            let nx = x + dx, ny = y + dy;
+            if (nx > 0 && nx < size && ny > 0 && ny < size && grid[ny][nx] === 1) {
+                walls.push({ x: nx, y: ny, px: x, py: y });
+            }
+        });
+    };
+
+    addWalls(startX, startY);
+
+    while (walls.length > 0) {
+        let randomIndex = Math.floor(Math.random() * walls.length);
+        let { x, y, px, py } = walls.splice(randomIndex, 1)[0];
+
+        if (grid[y][x] === 1) {
+            grid[y][x] = 0; // Devient chemin
+            grid[py + (y - py) / 2][px + (x - px) / 2] = 0; // Casse le mur entre les deux
+            addWalls(x, y);
+        }
+    }
+}
+
+/**
+ * Recursive Backtracker (DFS) : Longs chemins tortueux.
+ * Idéal pour les niveaux MOYENS et DIFFICILES.
+ */
+function generateRecursiveBacktracker(startX, startY) {
+    const stack = [[startX, startY]];
+    grid[startY][startX] = 0;
+
+    while (stack.length > 0) {
+        const [x, y] = stack[stack.length - 1];
+        const neighbors = [];
+
+        [[0, 2], [0, -2], [2, 0], [-2, 0]].forEach(([dx, dy]) => {
+            const nx = x + dx, ny = y + dy;
+            if (nx > 0 && nx < size && ny > 0 && ny < size && grid[ny][nx] === 1) {
+                neighbors.push({ nx, ny, dx, dy });
+            }
+        });
+
+        if (neighbors.length > 0) {
+            // Choix TRUE RANDOM
+            const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+            grid[next.ny][next.nx] = 0;
+            grid[y + next.dy / 2][x + next.dx / 2] = 0;
+            stack.push([next.nx, next.ny]);
+        } else {
+            stack.pop(); // Backtrack
+        }
+    }
+}
+
+/**
+ * Pour les niveaux 8-10 : On "casse" des murs aléatoires pour créer 
+ * des boucles et des fausses pistes complexes.
+ */
+function createComplexFalseLeads(level) {
+    const attempts = (level - 7) * (size * 2); // Plus on est proche de 10, plus on casse
+    for (let i = 0; i < attempts; i++) {
+        let x = Math.floor(Math.random() * (size - 2)) + 1;
+        let y = Math.floor(Math.random() * (size - 2)) + 1;
+
+        // Si c'est un mur qui sépare deux chemins, on a une chance de le casser
+        if (grid[y][x] === 1) {
+            const horizontal = grid[y][x-1] === 0 && grid[y][x+1] === 0;
+            const vertical = grid[y-1][x] === 0 && grid[y+1][x] === 0;
+            
+            if (horizontal || vertical) {
+                grid[y][x] = 0;
+            }
+        }
     }
 }
 
@@ -185,7 +288,9 @@ function movePlayer(key) {
             // Afficher le modal de victoire
             showVictory();
         }
+        return true;
     }
+    return false;
 }
 
 // Fonction pour afficher le modal de victoire avec confettis

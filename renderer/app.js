@@ -3,9 +3,9 @@
 
 // --- Données Fictives (Mock) pour simuler SQLite ---
 let labyrinthes = [
-    { id: 1, name: 'Labyrinthe d\'Initiation', size: 'Petite', difficulty: 2 },
-    { id: 2, name: 'Le Dédale du Minotaure', size: 'Grande', difficulty: 9 },
-    { id: 3, name: 'Chemin Perdu', size: 'Moyenne', difficulty: 5 }
+    { id: 1, name: 'Labyrinthe d\'Initiation', difficulty: 2 },
+    { id: 2, name: 'Le Dédale du Minotaure', difficulty: 9 },
+    { id: 3, name: 'Chemin Perdu', difficulty: 5 }
 ];
 
 // --- Données Fictives pour simuler les utilisateurs ---
@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mazeForm = document.getElementById('maze-form');
     const inputId = document.getElementById('maze-id');
     const inputName = document.getElementById('maze-name');
-    const inputSize = document.getElementById('maze-size');
     const inputDifficulty = document.getElementById('maze-difficulty');
     const difficultyDisplay = document.getElementById('difficulty-val');
 
@@ -116,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             tr.innerHTML = `
                 <td>${maze.name}</td>
-                <td>${maze.size}</td>
                 <td>${maze.difficulty} / 10</td>
                 <td>
                     <button class="btn-primary btn-edit" data-id="${maze.id}">Éditer</button>
@@ -144,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (maze) {
             inputId.value = maze.id;
             inputName.value = maze.name;
-            inputSize.value = maze.size;
             inputDifficulty.value = maze.difficulty;
             difficultyDisplay.textContent = maze.difficulty;
             switchView(viewEditor);
@@ -173,7 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const mazeData = {
             id: inputId.value ? parseInt(inputId.value) : Date.now(), // Fake ID pour mock
             name: inputName.value,
-            size: inputSize.value,
             difficulty: parseInt(inputDifficulty.value)
         };
 
@@ -357,12 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(validKeys.includes(key)) {
             e.preventDefault(); // Empêche le défilement de la page avec les flèches
-            window.stepsCount++;
-            overlaySteps.textContent = `Nombre de pas : ${window.stepsCount}`;
-            
             // Appel de la fonction de mouvement du joueur
             if (typeof movePlayer === 'function') {
-                movePlayer(key);
+                if (movePlayer(key)) {
+                    window.stepsCount++;
+                    overlaySteps.textContent = `Nombre de pas : ${window.stepsCount}`;
+                }
             }
         }
     });

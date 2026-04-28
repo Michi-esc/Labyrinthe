@@ -1,0 +1,24 @@
+{
+  "name": "labyrinthe",
+  "version": "1.0.0",
+  "description": "Application de gestion et d'exploration de labyrinthes en JavaScript. Le projet propose une interface web avec plusieurs vues: connexion, tableau de bord, éditeur de labyrinthe et panneau d'administration. Le moteur de labyrinthe est implémenté dans `labyrinth.js`, tandis que l'interface principale est dans `renderer/`.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Michi-esc/Labyrinthe.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Michi-esc/Labyrinthe/issues"
+  },
+  "homepage": "https://github.com/Michi-esc/Labyrinthe#readme",
+  "devDependencies": {
+    "electron": "^41.3.0"
+  }
+}

@@ -1,0 +1,1 @@
+// preload.js — vide pour l'instant
